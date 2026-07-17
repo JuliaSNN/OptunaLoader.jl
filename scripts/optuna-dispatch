@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPTS_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+
+usage() {
+    cat <<EOF
+Usage: optuna-dispatch <command> [options]
+
+COMMANDS
+--------
+
+  clean [options]
+      Runs as a daemon. Every --rest-time seconds, scans all .db files in
+      --dir (or a specific --db) for completed Optuna trials. For each study,
+      retrieves the Pareto-optimal (best) trials and deletes artifact files
+      belonging to all other trials, but only if those files exceed 160 MB.
+      Smaller files are left untouched. Use this to reclaim disk space on
+      helix while preserving the artifacts you care about.
+
+  scratch [options]
+      Same daemon loop as 'clean', but instead of deleting large files it
+      moves them to the scratch space at:
+        /pasteur/appa/scratch/aquaresi/optuna_artifacts/
+      The threshold is 1000 MB (applies to ALL trials, not just non-best).
+      Use this when you want to offload very large checkpoints without
+      permanently deleting them.
+
+  check-json <file>
+      Diagnostic tool for Optuna journal files (.db) that fail to load.
+      Attempts a full parse first; on failure, analyses the file line by
+      line looking for: trailing commas, missing commas between entries,
+      unescaped quotes, single quotes, and invalid literals (NaN, None,
+      True/False). Also runs a progressive parse to pinpoint the exact
+      character position where the file breaks. Prints a summary of
+      bracket/brace imbalances and fix suggestions. Read-only.
+
+  fix-json <file> [--no-backup]
+      Repairs the file in place by removing only the broken characters.
+      Three classes of errors are fixed (in order):
+        1. Trailing commas before a closing } or ]
+        2. Extra closing braces } that push the running brace balance below zero
+        3. Extra closing brackets ] that push the running bracket balance below zero
+      The parser is quote-aware: characters inside JSON strings are never touched.
+      Before any modification, a backup is written to <file>.bak (unless
+      --no-backup is passed). After fixing, the result is validated; if it is
+      still invalid the file is written anyway and a warning is printed.
+      Workflow: run check-json first to understand the problem, then fix-json
+      to attempt automatic repair.
+
+OPTIONS (clean / scratch)
+--------------------------
+
+  --dir DIR         Directory containing .db files, relative to the helix
+                    data root (/pasteur/helix/projects/Bathellierlab/
+                    User_folders/aquaresi/data).
+                    Default: models/SpatioTemporalTransformation/optuna_studies
+
+  --db FILE         Process only this .db file instead of all files in --dir.
+                    Default: all .db files found in --dir.
+
+  --rest-time N     Seconds to sleep between cleanup passes (default: 1200).
+                    Set to a low value for a one-shot-like run; the loop
+                    still runs indefinitely, so interrupt with Ctrl-C when done.
+
+  --log-level LVL   Julia logging verbosity: Debug | Info | Warn | Error
+                    (default: Info). Use Debug to see every file being
+                    inspected or skipped.
+
+OPTIONS (check-json)
+---------------------
+
+  FILE              Path to the Optuna journal file or any JSON file to analyse.
+
+OPTIONS (fix-json)
+-------------------
+
+  FILE              Path to the JSON file to repair.
+  --no-backup       Skip writing the .bak backup before modifying the file.
+EOF
+}
+
+CMD="${1:-}"
+shift || true
+
+case "$CMD" in
+    clean)
+        julia "$SCRIPTS_DIR/remove_trials.jl" "$@"
+        ;;
+    scratch)
+        julia "$SCRIPTS_DIR/remove_trials.jl" --to-scratch "$@"
+        ;;
+    check-json)
+        python3 "$SCRIPTS_DIR/check_json.py" "$@"
+        ;;
+    fix-json)
+        python3 "$SCRIPTS_DIR/fix_json.py" "$@"
+        ;;
+    ""|help|--help|-h)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $CMD" >&2
+        usage >&2
+        exit 1
+        ;;
+esac

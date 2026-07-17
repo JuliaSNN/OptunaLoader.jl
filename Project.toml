@@ -1,0 +1,20 @@
+name = "OptunaLoader"
+uuid = "10f7249e-029b-4d85-ad99-fe9fc4b42039"
+version = "0.1.0"
+authors = ["Alessio <alessio.quaresima@pasteur.fr>"]
+
+[deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
+
+[compat]
+DataFrames = "1.8.1"
+DrWatson = "2.19.1"
+JLD2 = "0.6.3"
+PythonCall = "0.9.31"
+Random = "1.11.0"
+Statistics = "1.11.1"
