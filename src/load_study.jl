@@ -78,7 +78,7 @@ Get all study names from an Optuna database.
 - `Vector{String}`: Vector of study names
 """
 function get_all_study_names(data_path, db_name)
-    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yaml file"
+    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yml file"
     if !isfile(joinpath(data_path, db_name))
         @error "The $(db_name) file does not exist. Please check the path."
         return String[]
@@ -99,7 +99,7 @@ Get all study names from an Optuna database.
 - `Vector{String}`: Vector of study names
 """
 function get_all_study_names(data_path)
-    @assert isfile(data_path) "The path $(data_path) does not exist. Please check the paths.yaml file"
+    @assert isfile(data_path) "The path $(data_path) does not exist. Please check the paths.yml file"
     storage = journal_storage(data_path; lock = JournalFileOpenLock)
     return pyconvert(Vector{String}, optuna[].study.get_all_study_names(storage))
 end
@@ -115,7 +115,7 @@ Delete a study from an Optuna database.
 - `study_name`: Name of the study to delete
 """
 function delete_study(data_path::String, db_name::String, study_name)
-    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yaml file"
+    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yml file"
     if !isfile(joinpath(data_path, db_name))
         @error "The $(db_name) file does not exist. Please check the path."
         return Dict{String,Any}()
@@ -145,7 +145,7 @@ function retrieve_trials(
     studies::Vector{String};
     best = false,
 )
-    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yaml file"
+    @assert isdir(data_path) "The path $(data_path) does not exist. Please check the paths.yml file"
     if !isfile(joinpath(data_path, db_name))
         @error "The $(db_name) file does not exist. Please check the path."
         return Dict{String,Any}()
@@ -176,7 +176,7 @@ function retrieve_trials(
     studies::Vector{String};
     best = false,
 )
-    @assert isfile(data_path) "The file $(data_path) does not exist. Please check the paths.yaml file"
+    @assert isfile(data_path) "The file $(data_path) does not exist. Please check the paths.yml file"
     trials = Dict{String,Any}()
     for study in studies
         @info "Retrieving trials for study: $(study)"
@@ -199,7 +199,7 @@ Retrieve trials from a single study in an Optuna database.
 - `Vector`: Vector of trial objects
 """
 function retrieve_trials(db_path::String, study_name::String; best = false)
-    @assert isfile(db_path) "The path $(db_path) does not exist. Please check the paths.yaml file"
+    @assert isfile(db_path) "The path $(db_path) does not exist. Please check the paths.yml file"
     storage = journal_storage(db_path; lock = JournalFileOpenLock)
     opt_study = optuna[].load_study(study_name = study_name, storage = storage)
     study_attributes = opt_study.user_attrs |> x-> pyconvert(Dict{String,String}, x)
