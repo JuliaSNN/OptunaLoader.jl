@@ -20,7 +20,8 @@ function hypervolume_history(study, ref_point::Union{Vector{Float64}, Nothing} =
         np.array(ref_point)
     end
     ns  = collect(step:step:n)
-    hvs = map(ns) do k
+    hvs = map(enumerate(ns)) do (i, k)
+        @info "Hypervolume: trial $k/$n ($i/$(length(ns)))"
         mat_py = np.array(all_mat[1:k, :])
         pyconvert(Float64, hv_fn(mat_py, ref_py))
     end

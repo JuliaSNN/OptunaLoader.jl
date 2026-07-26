@@ -5,6 +5,7 @@ module OptunaLoader
     using Statistics
     using Random
     using PythonCall
+    using ProgressBars
 
 
     MB = 1024 * 1024
@@ -42,6 +43,7 @@ module OptunaLoader
     end
 
     include("load_study.jl")
+    include("db_copy.jl")
     include("importance.jl")
     include("pareto.jl")
     include("parameters.jl")
@@ -71,6 +73,7 @@ module OptunaLoader
         params_and_measured,
         params_keys,
         get_study_data,
+        copy_valid,
         remove_non_best_trials_artifacts,
         move_large_artifact_to_scratch,
         remove_recordings_from_best_trials_artifacts,
