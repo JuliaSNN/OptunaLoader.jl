@@ -12,6 +12,25 @@ function retrieve_PedAnova_importance(db_path::String, studies; kwargs...)
     return retrieve_PedAnova_importance(storage, studies; kwargs...)
 end
 
+# PedAnova (via optuna.search_space.IntersectionSearchSpace) intersects the
+# recorded param distributions across ALL trials in the study. A single trial
+# with empty `distributions` (e.g. an enqueued/seeded trial completed without
+# its params attached) collapses that intersection to the empty set and makes
+# get_param_importances silently return {} for every objective. Importance is
+# only ever computed here (not from the real db elsewhere), so we compute it
+# against an in-memory copy with those trials dropped instead of touching the
+# stored study.
+function _dense_trials_only(opt_study)
+    good = [t for t in opt_study.trials if pyconvert(Int, length(t.distributions)) > 0]
+    n_dropped = pyconvert(Int, length(opt_study.trials)) - length(good)
+    if n_dropped > 0
+        @warn "Dropping $(n_dropped) trial(s) with empty distributions before computing importance" study=opt_study.study_name
+    end
+    filtered = optuna[].create_study(directions = opt_study.directions)
+    filtered.add_trials(good)
+    return filtered
+end
+
 function retrieve_PedAnova_importance(storage, studies;
             target_quantile = 0.8,
             evaluate_on_local = true,)
@@ -19,9 +38,10 @@ function retrieve_PedAnova_importance(storage, studies;
     for study_name in studies
         opt_study = optuna[].load_study(study_name = study_name, storage = storage)
         targets = pyconvert(Vector, opt_study.directions)
+        imp_study = _dense_trials_only(opt_study)
         try
             importance = map(eachindex(targets)) do n
-                pyconvert(Dict, Importance[].get_param_importances(opt_study,
+                pyconvert(Dict, Importance[].get_param_importances(imp_study,
                                 target = t -> t.values[n - 1],
                                 evaluator = ImportanceEvaluator[](
                                     target_quantile = target_quantile,

@@ -208,6 +208,14 @@ function retrieve_trials(db_path::String, study_name::String; best = false)
     for trial in _trials
         state = pyconvert(Int, trial.state)
         if state == 1 || state == 2 # TrialState.COMPLETE or TrialState.PRUNED
+            if pyconvert(Int, length(trial.params)) == 0
+                # Trial recorded with no params attached (e.g. an enqueued/seeded
+                # trial completed without its distributions) — not a real sample,
+                # and downstream params_and_measured assumes every trial has the
+                # full param set, so it must be dropped here rather than passed on.
+                @warn "Skipping trial with no recorded params" study=study_name number=pyconvert(Int, trial.number)
+                continue
+            end
             push!(trials, parse_trial(trial, opt_study.metric_names, study_attributes))
         end
     end
