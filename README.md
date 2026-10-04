@@ -62,3 +62,8 @@ Run `optuna-dispatch help` for full option documentation.
   returned when `trials` is empty (returns `func([0])` instead) — real but
   harmless in practice, since its only call site always passes an `empty_val`
   that happens to already match what the buggy fallback produces.
+
+## Documentation
+
+- `docs/optuna_setup.md` — how to wire a Julia simulation into Optuna multi-objective search (journal storage, samplers, stability-gate via `TrialPruned`, memory/walltime guards).
+- `docs/objective_skeleton.jl` — skeleton `Objective`/`set_config`/`run_config` to copy and fill in (placeholders in `<...>`).
