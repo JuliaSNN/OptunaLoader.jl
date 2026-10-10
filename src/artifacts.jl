@@ -86,22 +86,18 @@ function remove_recordings_from_best_trials_artifacts(data_path, db, study)
     @info "Retrieved: $(length(best_trials)) best trials and $(length(all_trials)) total trials for study $(study)"
     for trial in all_trials
         (trial.id in best_ids) || continue
-        path = trial.user_attrs["artifact_model"]
+        path = string(trial.user_attrs["artifact_model"])
         file = joinpath(artifact_folder, path)
         if !isfile(file)
             @warn "No model file found for best trial $(trial.id), skipping"
             continue
         end
         try
-            model = DrWatson.load(DrWatson.FileIO.File{DrWatson.FileIO.format"JLD2"}(file))
-            haskey(model, "recordings") || continue
-            temp_model = Dict{String,Any}(k => v for (k, v) in pairs(model) if k != "recordings")
-            rm(file)
-            DrWatson.save(DrWatson.FileIO.File{DrWatson.FileIO.format"JLD2"}(file), temp_model)
+            strip_recordings!(file) || continue
             some_trial = true
             @info "Stripped recordings from best trial $(trial.id): $path"
         catch e
-            @error "Skipping deletion of recordings for $file: $e"
+            @error "Cannot strip the recordings of $file (unreadable: saved with an older or incompatible package version, or the save failed); the file is left unchanged: $e"
         end
     end
     !some_trial && @info "Study $(study) has no recordings artifacts to remove"

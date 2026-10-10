@@ -47,6 +47,7 @@ module OptunaLoader
     include("importance.jl")
     include("pareto.jl")
     include("parameters.jl")
+    include("jld2_strip.jl")
     include("artifacts.jl")
 
     export pylist, pyconvert
