@@ -138,7 +138,6 @@ function save_figure_artifact(fig, name, trial, study, Makie::Module)
         )
         @assert isa(fig, Makie.Figure)
         Makie.save(file_path, fig)
-        # isa(fig, Plots.Plot) && SNNPlots.savefig(fig, file_path)
 
         artifact_id = upload_artifact[](
             artifact_store = get_artitfact_store(study),
