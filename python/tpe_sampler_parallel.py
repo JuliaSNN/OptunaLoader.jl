@@ -27,6 +27,15 @@ Optuna 4.9.0 internals relied upon (samplers/_tpe/sampler.py, pin to ==4.9.0 and
     (l.558) for RUNNING trials -> constant_liar=True is forced.
   * infer_relative_search_space is NOT windowed: assumes a fixed search space (true for SNNOptim).
   * FrozenTrial.state is a plain attribute (copy.copy + assignment gives a RUNNING copy).
+  * PRUNED trials always go to the "above" group (module functions _split_pruned_trials, l.866, and
+    _split_infeasible_trials, l.887 -- a PRUNED trial with violated constraints is classified
+    "infeasible" before its state is looked at -- replaced when the first TPESampler_parallel is
+    built; process-wide).  Stock TPE fills "below" with PRUNED trials once the feasible COMPLETE
+    trials run out, and _calculate_weights_below_for_multi_objective (l.895) then crashes on their
+    `values = None` ("inhomogeneous shape") whenever their stored constraints are <= 0 -- the v8
+    campaign hit this at trial 751 (97% of the history PRUNED by the hard rate limits, pruned trials
+    with Exc < Exc_min have feasible constraint values).  Pruned = implausible rates = bad region,
+    so "above" is also the right semantics.
 """
 from __future__ import annotations
 
@@ -43,6 +52,28 @@ from optuna.samplers._random import RandomSampler
 from optuna.trial import TrialState
 
 _log = logging.getLogger("tpe_sampler_parallel")
+
+
+def _pruned_always_above(trials, study, n_below):
+    """Replacement for optuna.samplers._tpe.sampler._split_pruned_trials: no PRUNED trial in "below"."""
+    return [], list(trials)
+
+
+def _infeasible_complete_only_below(trials, n_below):
+    """Replacement for _split_infeasible_trials: PRUNED trials with violated constraints (classified
+    infeasible before their state is looked at) never enter "below" either; COMPLETE infeasible trials
+    are split as in stock (least violation first)."""
+    from optuna.samplers._tpe.sampler import _get_infeasible_trial_score
+    complete = sorted((t for t in trials if t.state == TrialState.COMPLETE), key=_get_infeasible_trial_score)
+    pruned = [t for t in trials if t.state != TrialState.COMPLETE]
+    return complete[:n_below], complete[n_below:] + pruned
+
+
+def _patch_pruned_split():
+    import optuna.samplers._tpe.sampler as _m
+    if _m._split_pruned_trials is not _pruned_always_above:
+        _m._split_pruned_trials = _pruned_always_above
+        _m._split_infeasible_trials = _infeasible_complete_only_below
 
 
 class _WindowView:
@@ -65,6 +96,7 @@ class TPESampler_parallel(TPESampler):
         if seed is None:
             raise ValueError("TPESampler_parallel needs an explicit base seed")
         kwargs["constant_liar"] = True  # needed: stores/reads relative params of pending trials
+        _patch_pruned_split()  # see module docstring: PRUNED never in "below"
         super().__init__(seed=seed, **kwargs)
         self._base_seed, self._W = int(seed), int(window)
         self._timeout, self._poll = wait_timeout_s, poll_s
