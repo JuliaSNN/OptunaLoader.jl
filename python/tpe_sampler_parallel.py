@@ -92,7 +92,10 @@ class _WindowView:
 
 class TPESampler_parallel(TPESampler):
     def __init__(self, *, seed: int, window: int = 100, wait_timeout_s: float = 6 * 3600,
-                 poll_s: float = 0.2, on_trial_created=None, **kwargs):
+                 poll_s: float = 10.0, on_trial_created=None, **kwargs):
+        # poll_s: every poll re-reads the journal tail; ~100 waiting workers at the mock's 0.2 s is
+        # pointless load on a network file system. Trials last minutes, so 10 s (jittered 5-15 s)
+        # costs nothing.
         if seed is None:
             raise ValueError("TPESampler_parallel needs an explicit base seed")
         kwargs["constant_liar"] = True  # needed: stores/reads relative params of pending trials
