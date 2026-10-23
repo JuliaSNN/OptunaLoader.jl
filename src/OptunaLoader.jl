@@ -21,12 +21,15 @@ module OptunaLoader
     const SuccessiveHalvingPruner = Ref{Py}()
     const TrialPruned = Ref{Py}()
     const TPESampler = Ref{Py}()
+    const TPESampler_parallel = Ref{Py}()
     const FileSystemArtifactStore = Ref{Py}()
     const upload_artifact = Ref{Py}()
     const download_artifact = Ref{Py}()
 
     function __init__()
         optuna[] = PythonCall.pyimport("optuna")
+        # library Python modules (single source of truth: ../python)
+        PythonCall.pyimport("sys").path.insert(0, joinpath(@__DIR__, "..", "python"))
         # Optuna types
         JournalStorage[] = optuna[].storages.JournalStorage
         JournalFileBackend[] = optuna[].storages.journal.JournalFileBackend
@@ -37,6 +40,7 @@ module OptunaLoader
         SuccessiveHalvingPruner[] = optuna[].pruners.SuccessiveHalvingPruner()
         TrialPruned[] = optuna[].exceptions.TrialPruned
         TPESampler[] = optuna[].samplers.TPESampler
+        TPESampler_parallel[] = PythonCall.pyimport("tpe_sampler_parallel").TPESampler_parallel
         FileSystemArtifactStore[] = optuna[].artifacts.FileSystemArtifactStore
         upload_artifact[] = optuna[].artifacts.upload_artifact
         download_artifact[] = optuna[].artifacts.download_artifact
