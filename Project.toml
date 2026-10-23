@@ -1,6 +1,6 @@
 name = "OptunaLoader"
 uuid = "10f7249e-029b-4d85-ad99-fe9fc4b42039"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Alessio <alessio.quaresima@pasteur.fr>"]
 
 [deps]

@@ -6,6 +6,12 @@ hyperparameter-optimization studies, bridged via
 `network_models` repo's `loaders/optuna_old.jl` monolith into its own
 package/submodule.
 
+## Version
+
+0.2.0 adds `TPESampler_parallel` (deterministic windowed TPE) and
+`RetryJournalFileOpenLock` (ESTALE/EIO retry for CIFS/NFS journals); see
+`CHANGELOG.md`.
+
 ## Requirements
 
 - A Python environment with `optuna` installed, resolved automatically by
