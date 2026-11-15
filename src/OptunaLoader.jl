@@ -16,6 +16,7 @@ module OptunaLoader
     const JournalFileBackend = Ref{Py}()
     const JournalFileOpenLock = Ref{Py}()
     const JournalFileSymlinkLock = Ref{Py}()
+    const RetryJournalFileOpenLock = Ref{Py}()
     const ImportanceEvaluator = Ref{Py}()
     const Importance = Ref{Py}()
     const SuccessiveHalvingPruner = Ref{Py}()
@@ -41,6 +42,8 @@ module OptunaLoader
         TrialPruned[] = optuna[].exceptions.TrialPruned
         TPESampler[] = optuna[].samplers.TPESampler
         TPESampler_parallel[] = PythonCall.pyimport("tpe_sampler_parallel").TPESampler_parallel
+        # JournalFileOpenLock that retries NFS/CIFS ESTALE (python/retry_journal_lock.py)
+        RetryJournalFileOpenLock[] = PythonCall.pyimport("retry_journal_lock").RetryJournalFileOpenLock
         FileSystemArtifactStore[] = optuna[].artifacts.FileSystemArtifactStore
         upload_artifact[] = optuna[].artifacts.upload_artifact
         download_artifact[] = optuna[].artifacts.download_artifact
@@ -88,6 +91,7 @@ module OptunaLoader
         JournalFileBackend,
         JournalFileOpenLock,
         JournalFileSymlinkLock,
+        RetryJournalFileOpenLock,
         ImportanceEvaluator,
         Importance,
         SuccessiveHalvingPruner,
